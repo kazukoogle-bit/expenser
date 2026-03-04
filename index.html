@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -501,6 +502,58 @@
   }
   .pulsing { animation: pulse 1s ease-in-out infinite; }
 
+  /* GitHub Panel */
+  .gh-panel {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .gh-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+  }
+  .gh-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: var(--text-muted);
+  }
+  .gh-dot.connected { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .gh-dot.error     { background: var(--red); }
+  .gh-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .gh-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 7px 6px;
+    color: var(--text-dim);
+    font-size: 11px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+    line-height: 1.4;
+  }
+  .gh-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .gh-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .gh-btn.primary {
+    background: rgba(79,124,255,0.15);
+    border-color: rgba(79,124,255,0.4);
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .gh-btn.primary:hover:not(:disabled) { background: rgba(79,124,255,0.28); }
+
   /* Config buttons */
   .cfg-btn {
     background: var(--surface2);
@@ -543,6 +596,37 @@
 <div class="main">
   <!-- ─── Sidebar ─────────────────────────── -->
   <aside class="sidebar">
+
+    <!-- GitHub連携 -->
+    <div>
+      <div class="section-label" style="display:flex;align-items:center;justify-content:space-between;">
+        <span>🐙 GitHub連携</span>
+        <button class="cfg-btn" onclick="showGhSettings()">⚙ 接続設定</button>
+      </div>
+      <div class="gh-panel">
+        <div class="gh-status">
+          <div class="gh-dot" id="ghDot"></div>
+          <span id="ghStatusText" style="color:var(--text-muted);">未接続</span>
+        </div>
+        <div class="gh-actions">
+          <button class="gh-btn primary" onclick="ghLoadConfig()" id="ghBtnLoadConfig" disabled>
+            📥 設定を読込
+          </button>
+          <button class="gh-btn primary" onclick="ghSaveConfig()" id="ghBtnSaveConfig" disabled>
+            📤 設定を保存
+          </button>
+          <button class="gh-btn" onclick="ghLoadResult()" id="ghBtnLoadResult" disabled>
+            📥 結果を読込
+          </button>
+          <button class="gh-btn" onclick="ghSaveResult()" id="ghBtnSaveResult" disabled>
+            📤 結果を保存
+          </button>
+          <button class="gh-btn" onclick="ghSaveSpec()" id="ghBtnSaveSpec" disabled style="grid-column:1/-1;">
+            📄 仕様書を保存
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- Upload -->
     <div>
@@ -1555,8 +1639,8 @@ function showConfigStatus(msg, type) {
 }
 
 // ─── Spec viewer ──────────────────────────────────────────────
-function showSpec() {
-  const spec = `# 交通費精算ツール 仕様書
+function generateSpecText() {
+  return `# 交通費精算ツール 仕様書
 バージョン: 1.0
 作成日: ${new Date().toLocaleDateString('ja-JP')}
 
@@ -1824,7 +1908,12 @@ BOM付きUTF-8。Excelでの文字化け防止済み。
 - TeamSpirit への自動入力APIは未対応（手入力補助ツールとして運用）。
 - タイムラインの座標精度は Google Maps の記録精度に依存する。
   精度が低い場合は判定半径（radius）を広げて対応する。
+- GitHub連携のPATはSessionStorageに一時保存。ページを閉じると消去される。
 `;
+}
+
+function showSpec() {
+  const spec = generateSpecText();
 
   const old = document.getElementById('specModal');
   if (old) old.remove();
@@ -1876,9 +1965,326 @@ BOM付きUTF-8。Excelでの文字化け防止済み。
   document.body.appendChild(modal);
 }
 
+// ─── GitHub API 連携 ──────────────────────────────────────────
+
+// GitHub接続情報（SessionStorageに一時保存）
+let ghConfig = {
+  owner: '',
+  repo:  '',
+  pat:   '',       // Personal Access Token
+  user:  '',       // 自分のGitHubユーザー名（ファイルパス用）
+};
+
+const GH_API = 'https://api.github.com';
+
+// ファイルパス定義
+const GH_PATHS = {
+  personalConfig: () => `users/${ghConfig.user}/personal-config.json`,
+  result:         (ym) => `users/${ghConfig.user}/results/result-${ym}.json`,
+  spec:           () => `spec.md`,
+};
+
+// ─── 接続設定モーダル ──────────────────────────────────────────
+function showGhSettings() {
+  const old = document.getElementById('ghModal');
+  if (old) old.remove();
+
+  // SessionStorageから復元
+  const saved = sessionStorage.getItem('ghConfig');
+  if (saved) {
+    try { Object.assign(ghConfig, JSON.parse(saved)); } catch(e) {}
+  }
+
+  const modal = document.createElement('div');
+  modal.id = 'ghModal';
+  modal.style.cssText = `
+    position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9100;
+    display:flex;align-items:center;justify-content:center;padding:24px;
+  `;
+  modal.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;
+                width:100%;max-width:480px;padding:24px;display:flex;flex-direction:column;gap:16px;
+                box-shadow:0 24px 64px rgba(0,0,0,0.6);">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-size:14px;font-weight:700;">🐙 GitHub 接続設定</div>
+        <button onclick="document.getElementById('ghModal').remove()"
+          style="background:none;border:none;color:var(--text-muted);font-size:22px;cursor:pointer;">×</button>
+      </div>
+
+      <div style="font-size:11px;color:var(--text-dim);background:rgba(79,124,255,0.08);
+                  border:1px solid rgba(79,124,255,0.2);border-radius:8px;padding:10px 12px;line-height:1.7;">
+        接続情報はこのブラウザセッション中のみ保持されます。<br>
+        PATはページを閉じると消去されます。GitHubには保存されません。
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div class="setting-row">
+          <label>GitHubユーザー名（リポジトリオーナー）</label>
+          <input type="text" id="ghInputOwner" value="${ghConfig.owner}" placeholder="例: kazukoogle-bit">
+        </div>
+        <div class="setting-row">
+          <label>リポジトリ名</label>
+          <input type="text" id="ghInputRepo" value="${ghConfig.repo}" placeholder="例: expenser">
+        </div>
+        <div class="setting-row">
+          <label>あなたのGitHubユーザー名（ファイル保存先）</label>
+          <input type="text" id="ghInputUser" value="${ghConfig.user}" placeholder="例: kazukoogle-bit">
+        </div>
+        <div class="setting-row">
+          <label>
+            Personal Access Token（PAT）
+            <a href="https://github.com/settings/tokens/new?scopes=repo&description=expenser" target="_blank"
+              style="color:var(--accent);font-size:10px;margin-left:6px;">← 新規作成</a>
+          </label>
+          <input type="password" id="ghInputPat" value="${ghConfig.pat}" placeholder="ghp_xxxxxxxxxxxx">
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;">
+        <button onclick="ghConnect()"
+          style="flex:1;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;
+                 border-radius:8px;padding:11px;color:white;font-size:13px;font-weight:700;
+                 font-family:inherit;cursor:pointer;">
+          🔌 接続テスト＆保存
+        </button>
+        <button onclick="document.getElementById('ghModal').remove()"
+          style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+                 padding:11px 16px;color:var(--text-dim);font-size:13px;font-family:inherit;cursor:pointer;">
+          閉じる
+        </button>
+      </div>
+      <div id="ghModalMsg" style="font-size:11px;text-align:center;min-height:16px;"></div>
+    </div>
+  `;
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
+}
+
+async function ghConnect() {
+  const owner = document.getElementById('ghInputOwner').value.trim();
+  const repo  = document.getElementById('ghInputRepo').value.trim();
+  const user  = document.getElementById('ghInputUser').value.trim();
+  const pat   = document.getElementById('ghInputPat').value.trim();
+
+  if (!owner || !repo || !user || !pat) {
+    document.getElementById('ghModalMsg').innerHTML =
+      '<span style="color:var(--red);">すべての項目を入力してください</span>';
+    return;
+  }
+
+  document.getElementById('ghModalMsg').innerHTML =
+    '<span style="color:var(--text-dim);">接続確認中...</span>';
+
+  try {
+    // リポジトリ存在確認
+    const res = await fetch(`${GH_API}/repos/${owner}/${repo}`, {
+      headers: ghHeaders(pat)
+    });
+    if (!res.ok) throw new Error(`リポジトリにアクセスできません (HTTP ${res.status})`);
+
+    // 保存
+    ghConfig = { owner, repo, user, pat };
+    sessionStorage.setItem('ghConfig', JSON.stringify({ owner, repo, user, pat }));
+
+    updateGhStatus(true, `${owner}/${repo}`);
+    document.getElementById('ghModalMsg').innerHTML =
+      '<span style="color:var(--green);">✓ 接続成功！</span>';
+    setTimeout(() => document.getElementById('ghModal')?.remove(), 1200);
+    showToast('✓ GitHubに接続しました');
+
+  } catch(err) {
+    document.getElementById('ghModalMsg').innerHTML =
+      `<span style="color:var(--red);">✗ ${err.message}</span>`;
+    updateGhStatus(false, '接続エラー');
+  }
+}
+
+function ghHeaders(pat) {
+  return {
+    'Authorization': `Bearer ${pat || ghConfig.pat}`,
+    'Accept': 'application/vnd.github+json',
+    'X-GitHub-Api-Version': '2022-11-28',
+    'Content-Type': 'application/json',
+  };
+}
+
+function updateGhStatus(connected, label) {
+  const dot  = document.getElementById('ghDot');
+  const text = document.getElementById('ghStatusText');
+  dot.className  = 'gh-dot ' + (connected ? 'connected' : 'error');
+  text.textContent = label;
+  text.style.color = connected ? 'var(--green)' : 'var(--red)';
+  const btns = ['ghBtnLoadConfig','ghBtnSaveConfig','ghBtnLoadResult','ghBtnSaveResult','ghBtnSaveSpec'];
+  btns.forEach(id => document.getElementById(id).disabled = !connected);
+}
+
+// ─── GitHub API: ファイル取得 ──────────────────────────────────
+async function ghGetFile(path) {
+  const res = await fetch(
+    `${GH_API}/repos/${ghConfig.owner}/${ghConfig.repo}/contents/${path}`,
+    { headers: ghHeaders() }
+  );
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`GitHub取得エラー: HTTP ${res.status}`);
+  const data = await res.json();
+  const content = atob(data.content.replace(/\n/g, ''));
+  return { content, sha: data.sha };
+}
+
+// ─── GitHub API: ファイル保存（PUT） ──────────────────────────
+async function ghPutFile(path, content, message) {
+  // 既存ファイルのSHAを取得（更新に必要）
+  let sha;
+  try {
+    const existing = await ghGetFile(path);
+    if (existing) sha = existing.sha;
+  } catch(e) {}
+
+  const body = {
+    message: message || `Update ${path}`,
+    content: btoa(unescape(encodeURIComponent(content))),
+    ...(sha ? { sha } : {})
+  };
+
+  const res = await fetch(
+    `${GH_API}/repos/${ghConfig.owner}/${ghConfig.repo}/contents/${path}`,
+    { method: 'PUT', headers: ghHeaders(), body: JSON.stringify(body) }
+  );
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.message || `HTTP ${res.status}`);
+  }
+  return await res.json();
+}
+
+// ─── 個人設定の読み込み ────────────────────────────────────────
+async function ghLoadConfig() {
+  try {
+    showToast('GitHubから設定を読み込み中...');
+    const path = GH_PATHS.personalConfig();
+    const file = await ghGetFile(path);
+    if (!file) {
+      showToast('設定ファイルがまだ存在しません。先に保存してください。', 'warn'); return;
+    }
+    const cfg = JSON.parse(file.content);
+    applyConfig(cfg);
+    const updatedAt = cfg.meta?.updatedAt
+      ? new Date(cfg.meta.updatedAt).toLocaleString('ja-JP') : '不明';
+    showConfigStatus(`✓ GitHubから設定を読み込みました（${updatedAt}）`, 'ok');
+    showToast('✓ GitHubから設定を読み込みました');
+    if (expenses.length > 0) { renderTable(); updateStats(); }
+  } catch(err) {
+    showToast(`設定の読み込みに失敗: ${err.message}`, 'error');
+  }
+}
+
+// ─── 個人設定の保存 ────────────────────────────────────────────
+async function ghSaveConfig() {
+  try {
+    showToast('GitHubに設定を保存中...');
+    const cfg  = buildConfig();
+    const path = GH_PATHS.personalConfig();
+    await ghPutFile(path, JSON.stringify(cfg, null, 2),
+      `設定を更新 ${new Date().toLocaleDateString('ja-JP')}`);
+    showConfigStatus(`✓ GitHubに設定を保存しました (${path})`, 'ok');
+    showToast('✓ GitHubに設定を保存しました');
+  } catch(err) {
+    showToast(`設定の保存に失敗: ${err.message}`, 'error');
+  }
+}
+
+// ─── 解析結果の読み込み ────────────────────────────────────────
+async function ghLoadResult() {
+  const ym = `${periodYear}-${pad2(periodMonth)}`;
+  try {
+    showToast(`GitHubから ${ym} の結果を読み込み中...`);
+    const path = GH_PATHS.result(ym);
+    const file = await ghGetFile(path);
+    if (!file) {
+      showToast(`${ym} の保存済み結果がありません。`, 'warn'); return;
+    }
+    const data = JSON.parse(file.content);
+    expenses = data.expenses || [];
+    // dest オブジェクトを destinations から再リンク
+    expenses = expenses.map(e => {
+      const dest = destinations.find(d => d.id === e.destId) || e.dest;
+      return { ...e, dest };
+    });
+    renderTable();
+    updateStats();
+    showToast(`✓ ${ym} の解析結果を読み込みました`);
+  } catch(err) {
+    showToast(`結果の読み込みに失敗: ${err.message}`, 'error');
+  }
+}
+
+// ─── 解析結果の保存 ────────────────────────────────────────────
+async function ghSaveResult() {
+  if (expenses.length === 0) {
+    showToast('保存する精算データがありません。先に「精算データを生成」してください。', 'warn'); return;
+  }
+  const ym = `${periodYear}-${pad2(periodMonth)}`;
+  try {
+    showToast(`GitHubに ${ym} の結果を保存中...`);
+    const { from, to } = periodDateRange();
+    const payload = {
+      version: '1.0',
+      meta: { savedAt: new Date().toISOString(), period: { from, to } },
+      summary: {
+        totalDays:  expenses.filter(e => e.included).length,
+        totalFare:  expenses.filter(e => e.included).reduce((s,e) => s + e.fare, 0),
+      },
+      expenses: expenses.map(e => ({
+        date:       e.date,
+        dow:        e.dow,
+        destId:     e.dest.id,
+        destName:   e.dest.name,
+        destType:   e.dest.type,
+        fare:       e.fare,
+        included:   e.included,
+        isNonWorkday: e.isNonWorkday,
+      }))
+    };
+    const path = GH_PATHS.result(ym);
+    await ghPutFile(path, JSON.stringify(payload, null, 2),
+      `精算結果を保存 ${ym}`);
+    showToast(`✓ ${ym} の解析結果をGitHubに保存しました`);
+  } catch(err) {
+    showToast(`結果の保存に失敗: ${err.message}`, 'error');
+  }
+}
+
+// ─── 仕様書の保存 ──────────────────────────────────────────────
+async function ghSaveSpec() {
+  try {
+    showToast('GitHubに仕様書を保存中...');
+    // showSpec内のspec文字列を再生成
+    const specContent = generateSpecText();
+    await ghPutFile(GH_PATHS.spec(), specContent,
+      `仕様書を更新 ${new Date().toLocaleDateString('ja-JP')}`);
+    showToast('✓ 仕様書をGitHubに保存しました (spec.md)');
+  } catch(err) {
+    showToast(`仕様書の保存に失敗: ${err.message}`, 'error');
+  }
+}
+
+// ─── 起動時にSessionStorageから復元 ───────────────────────────
+function ghRestoreSession() {
+  const saved = sessionStorage.getItem('ghConfig');
+  if (!saved) return;
+  try {
+    const c = JSON.parse(saved);
+    if (c.owner && c.repo && c.pat) {
+      Object.assign(ghConfig, c);
+      updateGhStatus(true, `${c.owner}/${c.repo}`);
+    }
+  } catch(e) {}
+}
+
 // ─── Init ─────────────────────────────────────────────────────
 renderDestList();
 updatePeriodDisplay();
+ghRestoreSession();
 </script>
 </body>
 </html>
