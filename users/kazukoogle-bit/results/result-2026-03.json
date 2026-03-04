@@ -1,0 +1,456 @@
+{
+  "version": "1.0",
+  "meta": {
+    "savedAt": "2026-03-04T08:30:41.606Z",
+    "period": {
+      "from": "2026-03-01",
+      "to": "2026-03-31"
+    }
+  },
+  "summary": {
+    "totalDays": 44,
+    "totalFare": 34256
+  },
+  "expenses": [
+    {
+      "date": "2016-07-11",
+      "dow": "月",
+      "destId": 1772612939088,
+      "destName": "リトルソフト（南池袋）",
+      "destType": "client",
+      "fare": 416,
+      "included": true,
+      "isNonWorkday": false
+    },
+    {
+      "date": "2016-07-13",
+      "dow": "水",
+      "destId": 1772612939088,
+      "destName": "リトルソフト（南池袋）",
+      "destType": "client",
+      "fare": 416,
+      "included": true,
+      "isNonWorkday": false
+    },
+    {
+      "date": "2016-07-14",
+      "dow": "木",
+      "destId": 1772612939088,
+      "destName": "リトルソフト（南池袋）",
+      "destType": "client",
+      "fare": 416,
+      "included": true,
+      "isNonWorkday": false
+    },
+    {
+      "date": "2016-07-15",
+      "dow": "金",
+      "destId": 1772612939088,
+      "destName": "リトルソフト（南池袋）",
+      "destType": "client",
+      "fare": 416,
+      "included": true,
+      "isNonWorkday": false
+    },
+    {
+      "date": "2016-07-19",
+      "dow": "火",
+      "destId": 1772612939088,
+      "destName": "リトルソフト（南池袋）",
+      "destType": "client",
+      "fare": 416,
+      "included": true,
+      "isNonWorkday": false
+    },
+    {
+      "date": "2016-07-20",
+      "dow": "水",
+      "destId": 1772612939088,
+      "destName": "リトルソフト（南池袋）",
+      "destType": "client",
+      "fare": 416,
+      "included": true,
+      "isNonWorkday": false
+    },
+    {
+      "date": "2016-07-26",
+      "dow": "火",
+      "destId": 1772612939088,
+      "destName": "リトルソフト（南池袋）",
+      "destType": "client",
+      "fare": 416,
+      "included": true,
+      "isNonWorkday": false
+    },
+    {
+      "date": "2016-07-27",
+      "dow": "水",
+      "destId": 1772612939088,
+      "destName": "リトルソフト（南池袋）",
+      "destType": "client",
+      "fare": 416,
+      "included": true,
+      "isNonWorkday": false
+    },
+    {
+      "date": "2016-07-29",
+      "dow": "金",
+      "destId": 1772612939088,
+      "destName": "リトルソフト（南池袋）",
+      "destType": "client",
+      "fare": 416,
+      "included": true,
+      "isNonWorkday": false
+    },
+    {
+      "date": "2016-08-03",
+      "dow": "水",
+      "destId": 1772612939088,
+      "destName": "リトルソフト（南池袋）",
+      "destType": "client",
+      "fare": 416,
+      "included": true,
+      "isNonWorkday": false
+    },
+    {
+      "date": "2016-08-05",
+      "dow": "金",
+      "destId": 1772612939088,
+      "destName": "リトルソフト（南池袋）",
+      "destType": "client",
+      "fare": 416,
+      "included": true,
+      "isNonWorkday": false
+    },
+    {
+      "date": "2016-08-09",
+      "dow": "火",
+      "destId": 1772612939088,
+      "destName": "リトルソフト（南池袋）",
+      "destType": "client",
+      "fare": 416,
+      "included": true,
+      "isNonWorkday": false
+    },
+    {
+      "date": "2016-08-10",
+      "dow": "水",
+      "destId": 1772612939088,
+      "destName": "リトルソフト（南池袋）",
+      "destType": "client",
+      "fare": 416,
+      "included": true,
+      "isNonWorkday": false
+    },
+    {
+      "date": "2016-08-18",
+      "dow": "木",
+      "destId": 1772612939088,
+      "destName": "リトルソフト（南池袋）",
+      "destType": "client",
+      "fare": 416,
+      "included": true,
+      "isNonWorkday": false
+    },
+    {
+      "date": "2016-08-24",
+      "dow": "水",
+      "destId": 1772612939088,
+      "destName": "リトルソフト（南池袋）",
+      "destType": "client",
+      "fare": 416,
+      "included": true,
+      "isNonWorkday": false
+    },
+    {
+      "date": "2016-08-26",
+      "dow": "金",
+      "destId": 1772612939088,
+      "destName": "リトルソフト（南池袋）",
+      "destType": "client",
+      "fare": 416,
+      "included": true,
+      "isNonWorkday": false
+    },
+    {
+      "date": "2016-09-16",
+      "dow": "金",
+      "destId": 1772612939088,
+      "destName": "リトルソフト（南池袋）",
+      "destType": "client",
+      "fare": 416,
+      "included": true,
+      "isNonWorkday": false
+    },
+    {
+      "date": "2016-09-30",
+      "dow": "金",
+      "destId": 1772612939088,
+      "destName": "リトルソフト（南池袋）",
+      "destType": "client",
+      "fare": 416,
+      "included": true,
+      "isNonWorkday": false
+    },
+    {
+      "date": "2016-10-03",
+      "dow": "月",
+      "destId": 1772612939088,
+      "destName": "リトルソフト（南池袋）",
+      "destType": "client",
+      "fare": 416,
+      "included": true,
+      "isNonWorkday": false
+    },
+    {
+      "date": "2016-10-04",
+      "dow": "火",
+      "destId": 1772612939088,
+      "destName": "リトルソフト（南池袋）",
+      "destType": "client",
+      "fare": 416,
+      "included": true,
+      "isNonWorkday": false
+    },
+    {
+      "date": "2016-10-05",
+      "dow": "水",
+      "destId": 1772612939088,
+      "destName": "リトルソフト（南池袋）",
+      "destType": "client",
+      "fare": 416,
+      "included": true,
+      "isNonWorkday": false
+    },
+    {
+      "date": "2016-10-06",
+      "dow": "木",
+      "destId": 1772612939088,
+      "destName": "リトルソフト（南池袋）",
+      "destType": "client",
+      "fare": 416,
+      "included": true,
+      "isNonWorkday": false
+    },
+    {
+      "date": "2016-10-12",
+      "dow": "水",
+      "destId": 1772612939088,
+      "destName": "リトルソフト（南池袋）",
+      "destType": "client",
+      "fare": 416,
+      "included": true,
+      "isNonWorkday": false
+    },
+    {
+      "date": "2016-10-18",
+      "dow": "火",
+      "destId": 1772612939088,
+      "destName": "リトルソフト（南池袋）",
+      "destType": "client",
+      "fare": 416,
+      "included": true,
+      "isNonWorkday": false
+    },
+    {
+      "date": "2016-10-21",
+      "dow": "金",
+      "destId": 1772612939088,
+      "destName": "リトルソフト（南池袋）",
+      "destType": "client",
+      "fare": 416,
+      "included": true,
+      "isNonWorkday": false
+    },
+    {
+      "date": "2016-10-24",
+      "dow": "月",
+      "destId": 1772612939088,
+      "destName": "リトルソフト（南池袋）",
+      "destType": "client",
+      "fare": 416,
+      "included": true,
+      "isNonWorkday": false
+    },
+    {
+      "date": "2016-10-25",
+      "dow": "火",
+      "destId": 1772612939088,
+      "destName": "リトルソフト（南池袋）",
+      "destType": "client",
+      "fare": 416,
+      "included": true,
+      "isNonWorkday": false
+    },
+    {
+      "date": "2016-10-31",
+      "dow": "月",
+      "destId": 1772612939088,
+      "destName": "リトルソフト（南池袋）",
+      "destType": "client",
+      "fare": 416,
+      "included": true,
+      "isNonWorkday": false
+    },
+    {
+      "date": "2016-11-01",
+      "dow": "火",
+      "destId": 1772612939088,
+      "destName": "リトルソフト（南池袋）",
+      "destType": "client",
+      "fare": 416,
+      "included": true,
+      "isNonWorkday": false
+    },
+    {
+      "date": "2016-11-11",
+      "dow": "金",
+      "destId": 1772612939088,
+      "destName": "リトルソフト（南池袋）",
+      "destType": "client",
+      "fare": 416,
+      "included": true,
+      "isNonWorkday": false
+    },
+    {
+      "date": "2016-11-14",
+      "dow": "月",
+      "destId": 1772612939088,
+      "destName": "リトルソフト（南池袋）",
+      "destType": "client",
+      "fare": 416,
+      "included": true,
+      "isNonWorkday": false
+    },
+    {
+      "date": "2017-11-14",
+      "dow": "火",
+      "destId": 1772612994254,
+      "destName": "ACCESS（秋葉原）",
+      "destType": "client",
+      "fare": 2410,
+      "included": true,
+      "isNonWorkday": false
+    },
+    {
+      "date": "2018-04-19",
+      "dow": "木",
+      "destId": 1772612994254,
+      "destName": "ACCESS（秋葉原）",
+      "destType": "client",
+      "fare": 2410,
+      "included": true,
+      "isNonWorkday": false
+    },
+    {
+      "date": "2018-06-29",
+      "dow": "金",
+      "destId": 1772612994254,
+      "destName": "ACCESS（秋葉原）",
+      "destType": "client",
+      "fare": 2410,
+      "included": true,
+      "isNonWorkday": false
+    },
+    {
+      "date": "2018-09-27",
+      "dow": "木",
+      "destId": 1772612994254,
+      "destName": "ACCESS（秋葉原）",
+      "destType": "client",
+      "fare": 2410,
+      "included": true,
+      "isNonWorkday": false
+    },
+    {
+      "date": "2019-02-12",
+      "dow": "火",
+      "destId": 1772612994254,
+      "destName": "ACCESS（秋葉原）",
+      "destType": "client",
+      "fare": 2410,
+      "included": true,
+      "isNonWorkday": false
+    },
+    {
+      "date": "2019-12-12",
+      "dow": "木",
+      "destId": 1772612939088,
+      "destName": "リトルソフト（南池袋）",
+      "destType": "client",
+      "fare": 416,
+      "included": true,
+      "isNonWorkday": false
+    },
+    {
+      "date": "2019-12-13",
+      "dow": "金",
+      "destId": 1772612994254,
+      "destName": "ACCESS（秋葉原）",
+      "destType": "client",
+      "fare": 2410,
+      "included": true,
+      "isNonWorkday": false
+    },
+    {
+      "date": "2025-01-21",
+      "dow": "火",
+      "destId": 1772612939088,
+      "destName": "リトルソフト（南池袋）",
+      "destType": "client",
+      "fare": 416,
+      "included": true,
+      "isNonWorkday": false
+    },
+    {
+      "date": "2026-02-06",
+      "dow": "金",
+      "destId": 1772612994254,
+      "destName": "ACCESS（秋葉原）",
+      "destType": "client",
+      "fare": 2410,
+      "included": true,
+      "isNonWorkday": false
+    },
+    {
+      "date": "2026-02-06",
+      "dow": "金",
+      "destId": 1772612939088,
+      "destName": "リトルソフト（南池袋）",
+      "destType": "client",
+      "fare": 416,
+      "included": true,
+      "isNonWorkday": false
+    },
+    {
+      "date": "2026-02-12",
+      "dow": "木",
+      "destId": 1772612994254,
+      "destName": "ACCESS（秋葉原）",
+      "destType": "client",
+      "fare": 2410,
+      "included": true,
+      "isNonWorkday": false
+    },
+    {
+      "date": "2026-02-13",
+      "dow": "金",
+      "destId": 1772612939088,
+      "destName": "リトルソフト（南池袋）",
+      "destType": "client",
+      "fare": 416,
+      "included": true,
+      "isNonWorkday": false
+    },
+    {
+      "date": "2026-03-02",
+      "dow": "月",
+      "destId": 1772612939088,
+      "destName": "リトルソフト（南池袋）",
+      "destType": "client",
+      "fare": 416,
+      "included": true,
+      "isNonWorkday": false
+    }
+  ]
+}
