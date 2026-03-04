@@ -1,0 +1,1884 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>交通費精算ツール</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3349;
+    --accent: #4f7cff;
+    --accent2: #7c3aed;
+    --green: #10b981;
+    --yellow: #f59e0b;
+    --red: #ef4444;
+    --text: #e2e8f0;
+    --text-dim: #8892a4;
+    --text-muted: #4a5568;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ─── Header ─────────────────────────────── */
+  header {
+    background: linear-gradient(135deg, #0d1424 0%, #13172a 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 32px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .logo {
+    width: 40px; height: 40px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 10px;
+    display: grid; place-items: center;
+    font-size: 20px;
+  }
+  .header-title { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
+  .header-sub { font-size: 12px; color: var(--text-dim); margin-top: 2px; font-family: 'DM Mono', monospace; }
+  .badge {
+    margin-left: auto;
+    background: rgba(79,124,255,0.15);
+    border: 1px solid rgba(79,124,255,0.3);
+    color: var(--accent);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* ─── Layout ─────────────────────────────── */
+  .main { display: grid; grid-template-columns: 340px 1fr; flex: 1; min-height: 0; }
+
+  /* ─── Sidebar ────────────────────────────── */
+  .sidebar {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    overflow-y: auto;
+  }
+  .section-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+  }
+
+  /* Upload Zone */
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 28px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .upload-zone:hover, .upload-zone.drag-over {
+    border-color: var(--accent);
+    background: rgba(79,124,255,0.05);
+  }
+  .upload-icon { font-size: 32px; margin-bottom: 8px; }
+  .upload-title { font-size: 13px; font-weight: 500; margin-bottom: 4px; }
+  .upload-hint { font-size: 11px; color: var(--text-dim); line-height: 1.5; }
+  #fileInput { display: none; }
+
+  /* Settings */
+  .setting-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+  .setting-row label {
+    font-size: 12px;
+    color: var(--text-dim);
+    font-weight: 500;
+  }
+  .setting-row input, .setting-row select {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 12px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 13px;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+  .setting-row input:focus, .setting-row select:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  .setting-row input[type="number"] { font-family: 'DM Mono', monospace; }
+
+  /* Destination list */
+  .dest-list { display: flex; flex-direction: column; gap: 6px; }
+  .dest-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+  .dest-info { flex: 1; min-width: 0; }
+  .dest-name { font-weight: 500; margin-bottom: 2px; }
+  .dest-coords { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text-muted); }
+  .dest-remove {
+    background: none; border: none; color: var(--text-muted);
+    cursor: pointer; padding: 2px; font-size: 14px; line-height: 1;
+    transition: color 0.2s;
+  }
+  .dest-remove:hover { color: var(--red); }
+
+  .add-dest-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .add-dest-row input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 10px;
+    color: var(--text);
+    font-size: 12px;
+    font-family: inherit;
+  }
+  .add-dest-row input:focus { outline: none; border-color: var(--accent); }
+  .btn-add {
+    background: var(--accent);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    width: 32px;
+    transition: background 0.2s;
+  }
+  .btn-add:hover { background: #3b6fe8; }
+
+  /* Process Button */
+  .btn-process {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none;
+    border-radius: 10px;
+    padding: 14px;
+    color: white;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    width: 100%;
+    transition: opacity 0.2s, transform 0.1s;
+    letter-spacing: 0.3px;
+  }
+  .btn-process:hover { opacity: 0.9; transform: translateY(-1px); }
+  .btn-process:active { transform: translateY(0); }
+  .btn-process:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  /* ─── Content Area ───────────────────────── */
+  .content {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Stats bar */
+  .stats-bar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 28px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+  .stat-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+  }
+  .stat-label { font-size: 11px; color: var(--text-dim); margin-bottom: 4px; }
+  .stat-value { font-size: 22px; font-weight: 700; font-family: 'DM Mono', monospace; }
+  .stat-value.green { color: var(--green); }
+  .stat-value.accent { color: var(--accent); }
+  .stat-value.yellow { color: var(--yellow); }
+
+  /* Period navigator */
+  .period-nav {
+    padding: 10px 28px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    flex-wrap: wrap;
+  }
+  .period-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-right: 4px;
+  }
+  .nav-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 10px;
+    color: var(--text-dim);
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .nav-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .nav-btn.active {
+    background: rgba(79,124,255,0.2);
+    border-color: var(--accent);
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .period-month-display {
+    font-family: 'DM Mono', monospace;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    min-width: 100px;
+    text-align: center;
+  }
+  .period-sep { width: 1px; height: 20px; background: var(--border); margin: 0 4px; }
+  .period-range {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: 4px;
+  }
+  .period-range input[type="date"] {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 8px;
+    color: var(--text);
+    font-size: 12px;
+    font-family: 'DM Mono', monospace;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .period-range input[type="date"]:focus { outline: none; border-color: var(--accent); }
+  .period-range span { font-size: 11px; color: var(--text-muted); }
+
+  /* Toolbar */
+  .toolbar {
+    padding: 12px 28px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .filter-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 12px;
+    color: var(--text-dim);
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .filter-btn.active {
+    background: rgba(79,124,255,0.2);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .toolbar-sep { width: 1px; height: 20px; background: var(--border); }
+  .btn-export {
+    margin-left: auto;
+    background: var(--green);
+    border: none;
+    border-radius: 8px;
+    padding: 7px 16px;
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .btn-export:hover { opacity: 0.85; }
+  .btn-export:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-copy-ts {
+    background: rgba(79,124,255,0.15);
+    border: 1px solid rgba(79,124,255,0.4);
+    border-radius: 8px;
+    padding: 7px 14px;
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-copy-ts:hover { background: rgba(79,124,255,0.25); }
+
+  /* Table */
+  .table-wrap { flex: 1; overflow-y: auto; padding: 0 28px 28px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+  thead th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  tbody tr {
+    border-bottom: 1px solid rgba(46,51,73,0.5);
+    transition: background 0.15s;
+  }
+  tbody tr:hover { background: rgba(255,255,255,0.03); }
+  tbody tr.excluded { opacity: 0.35; }
+  tbody td {
+    padding: 11px 12px;
+    font-size: 13px;
+    vertical-align: middle;
+  }
+  .td-date { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text-dim); white-space: nowrap; }
+  .td-day { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-muted); }
+  .td-from { color: var(--text-dim); font-size: 12px; }
+  .td-arrow { color: var(--text-muted); padding: 0 4px; }
+  .td-dest { font-weight: 500; }
+  .td-fare { font-family: 'DM Mono', monospace; font-weight: 700; color: var(--green); text-align: right; }
+  .td-round { font-size: 11px; }
+
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  .tag-office { background: rgba(79,124,255,0.2); color: var(--accent); }
+  .tag-client { background: rgba(124,58,237,0.2); color: #a78bfa; }
+  .tag-holiday { background: rgba(239,68,68,0.15); color: var(--red); }
+  .tag-round { background: rgba(16,185,129,0.15); color: var(--green); }
+  .tag-one { background: rgba(245,158,11,0.15); color: var(--yellow); }
+
+  /* Checkbox */
+  .row-check {
+    width: 16px; height: 16px;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+
+  /* Empty state */
+  .empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 300px;
+    gap: 16px;
+    color: var(--text-muted);
+  }
+  .empty-icon { font-size: 56px; opacity: 0.4; }
+  .empty-title { font-size: 16px; font-weight: 500; color: var(--text-dim); }
+  .empty-desc { font-size: 13px; text-align: center; max-width: 300px; line-height: 1.6; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px; right: 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--green);
+    border-radius: 8px;
+    padding: 12px 20px;
+    font-size: 13px;
+    color: var(--text);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    transform: translateX(120%);
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    z-index: 9999;
+  }
+  .toast.show { transform: translateX(0); }
+
+  /* Month group header */
+  .month-header td {
+    background: rgba(79,124,255,0.08);
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 6px 12px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* Progress styles */
+  .progress-box {
+    display: none;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-top: 10px;
+  }
+  .progress-box.visible { display: block; }
+  .progress-step {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .progress-step .step-icon { font-size: 14px; width: 18px; text-align: center; flex-shrink: 0; }
+  .progress-step.done { color: var(--green); }
+  .progress-step.active { color: var(--accent); font-weight: 500; }
+  .progress-step.error { color: var(--red); }
+  .progress-bar-wrap {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 10px;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 2px;
+    width: 0%;
+    transition: width 0.3s ease;
+  }
+  .progress-detail {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 6px;
+    font-family: 'DM Mono', monospace;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  .pulsing { animation: pulse 1s ease-in-out infinite; }
+
+  /* Config buttons */
+  .cfg-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 3px 9px;
+    color: var(--text-dim);
+    font-size: 10px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .cfg-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Demo data styles */
+  .demo-hint {
+    background: rgba(245,158,11,0.1);
+    border: 1px solid rgba(245,158,11,0.3);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 11px;
+    color: var(--yellow);
+    line-height: 1.5;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🚃</div>
+  <div>
+    <div class="header-title">交通費精算ツール</div>
+    <div class="header-sub">Google Maps Timeline → TeamSpirit 連携補助</div>
+  </div>
+  <div class="badge" style="cursor:pointer;" onclick="showSpec()">v1.0 📄仕様書</div>
+</header>
+
+<div class="main">
+  <!-- ─── Sidebar ─────────────────────────── -->
+  <aside class="sidebar">
+
+    <!-- Upload -->
+    <div>
+      <div class="section-label">📂 データ読み込み</div>
+      <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+        <div class="upload-icon">📍</div>
+        <div class="upload-title">Timeline.json をドロップ</div>
+        <div class="upload-hint">Google Maps アプリ → プロフィール →<br>タイムライン → ⋯ → エクスポート<br>で取得した JSON ファイル</div>
+      </div>
+      <input type="file" id="fileInput" accept=".json">
+
+      <!-- Progress box -->
+      <div class="progress-box" id="progressBox">
+        <div class="progress-step" id="step1">
+          <span class="step-icon">📂</span>
+          <span id="step1text">ファイルを読み込み中...</span>
+        </div>
+        <div class="progress-step" id="step2">
+          <span class="step-icon">🔍</span>
+          <span id="step2text">JSONを解析中...</span>
+        </div>
+        <div class="progress-step" id="step3">
+          <span class="step-icon">✅</span>
+          <span id="step3text">完了</span>
+        </div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-detail" id="progressDetail">　</div>
+      </div>
+
+      <div class="demo-hint" style="margin-top:10px;">
+        👆 ファイルがない場合は「サンプルデータで試す」ボタンをどうぞ
+      </div>
+      <button class="btn-process" style="margin-top:10px;background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);" onclick="loadDemo()">
+        📊 サンプルデータで試す
+      </button>
+    </div>
+
+    <!-- Settings -->
+    <div>
+      <div class="section-label" style="display:flex;align-items:center;justify-content:space-between;">
+        <span>⚙️ 設定</span>
+        <div style="display:flex;gap:6px;">
+          <button class="cfg-btn" onclick="document.getElementById('configFileInput').click()" title="設定ファイルを読み込む">📥 インポート</button>
+          <button class="cfg-btn" onclick="exportConfig()" title="設定ファイルを保存する">📤 エクスポート</button>
+        </div>
+      </div>
+      <input type="file" id="configFileInput" accept=".json" style="display:none;">
+      <div id="configStatus" style="display:none;font-size:10px;padding:5px 8px;border-radius:6px;margin-bottom:8px;"></div>
+      <div class="setting-row">
+        <label>自宅の最寄り駅（出発地）</label>
+        <input type="text" id="homeStation" value="新宿" placeholder="例: 渋谷、横浜">
+      </div>
+      <div class="setting-row">
+        <label>往復 or 片道</label>
+        <select id="tripMode">
+          <option value="round">往復</option>
+          <option value="one">片道</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <label>休日の扱い</label>
+        <select id="holidayMode">
+          <option value="exclude">除外する</option>
+          <option value="include">含める（グレーアウト表示）</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Destinations -->
+    <div>
+      <div class="section-label">🏢 訪問先リスト</div>
+      <div class="dest-list" id="destList"></div>
+      <div class="add-dest-row" style="margin-top:8px;">
+        <input type="text" id="newDestName" placeholder="訪問先名" style="grid-column:1/-1;">
+        <input type="number" id="newDestFare" placeholder="運賃 (円)">
+        <input type="number" id="newDestRadius" placeholder="半径 (m) 例:300">
+        <input type="number" id="newDestLat" placeholder="緯度 例: 35.6986" step="0.0001">
+        <input type="number" id="newDestLng" placeholder="経度 例: 139.7716" step="0.0001">
+      </div>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:4px;line-height:1.5;">
+        💡 緯度・経度は <a href="https://maps.google.com" target="_blank" style="color:var(--accent);">Google Maps</a> で訪問先を右クリック→座標をコピー
+      </div>
+      <button class="btn-add" onclick="addDestination()" style="width:100%;margin-top:8px;border-radius:8px;height:32px;font-size:13px;">＋ 追加</button>
+    </div>
+
+    <!-- Process -->
+    <div>
+      <button class="btn-process" id="processBtn" onclick="processData()" disabled>
+        🔍 精算データを生成
+      </button>
+      <button class="btn-process" id="debugBtn" onclick="showDebug()" disabled
+        style="margin-top:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);font-size:12px;padding:10px;">
+        🔎 データ内の場所名を確認する
+      </button>
+    </div>
+
+    <!-- Debug panel -->
+    <div id="debugPanel" style="display:none;">
+      <div class="section-label" style="margin-top:16px;">🔎 実際の場所名サンプル</div>
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;line-height:1.5;">
+        JSONに記録されている場所名の一覧です。<br>訪問先リストのキーワードがここに含まれているか確認してください。
+      </div>
+      <div id="debugList" style="display:flex;flex-direction:column;gap:4px;max-height:260px;overflow-y:auto;"></div>
+      <div id="debugStats" style="margin-top:10px;font-size:11px;color:var(--text-dim);font-family:'DM Mono',monospace;line-height:1.6;"></div>
+    </div>
+
+  </aside>
+
+  <!-- ─── Content ───────────────────────── -->
+  <div class="content">
+
+    <!-- Stats -->
+    <div class="stats-bar">
+      <div class="stat-card">
+        <div class="stat-label">精算対象日数</div>
+        <div class="stat-value accent" id="statDays">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">合計交通費</div>
+        <div class="stat-value green" id="statTotal">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">会社への通勤</div>
+        <div class="stat-value" id="statOffice">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">クライアント訪問</div>
+        <div class="stat-value yellow" id="statClient">—</div>
+      </div>
+    </div>
+
+    <!-- Period Navigator -->
+    <div class="period-nav">
+      <span class="period-label">期間</span>
+      <button class="nav-btn" onclick="shiftMonth(-1)">◀ 前月</button>
+      <div class="period-month-display" id="periodDisplay">—</div>
+      <button class="nav-btn" onclick="shiftMonth(1)">次月 ▶</button>
+      <button class="nav-btn active" id="btnThisMonth" onclick="setThisMonth()">今月</button>
+      <button class="nav-btn" id="btnPrevMonth" onclick="setPrevMonth()">先月</button>
+      <div class="period-sep"></div>
+      <div class="period-range">
+        <input type="date" id="rangeFrom" onchange="onRangeChange()">
+        <span>〜</span>
+        <input type="date" id="rangeTo" onchange="onRangeChange()">
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <span style="font-size:12px;color:var(--text-dim);font-weight:500;">フィルター:</span>
+      <button class="filter-btn active" onclick="setFilter('all', this)">すべて</button>
+      <button class="filter-btn" onclick="setFilter('office', this)">通勤</button>
+      <button class="filter-btn" onclick="setFilter('client', this)">訪問</button>
+      <div class="toolbar-sep"></div>
+      <button class="filter-btn" onclick="toggleHolidays(this)" id="holidayToggle">休日を表示</button>
+      <button class="btn-copy-ts" onclick="copyForTeamSpirit()">📋 TeamSpirit用コピー</button>
+      <button class="btn-export" id="exportBtn" onclick="exportCSV()" disabled>⬇ CSV出力</button>
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrap" id="tableWrap">
+      <div class="empty">
+        <div class="empty-icon">🗂️</div>
+        <div class="empty-title">データがありません</div>
+        <div class="empty-desc">左パネルから Timeline.json を読み込み、訪問先を設定して「精算データを生成」を押してください。</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── State ────────────────────────────────────────────────────
+const COLORS = ['#4f7cff','#7c3aed','#10b981','#f59e0b','#ef4444','#06b6d4','#ec4899','#84cc16'];
+let destinations = [
+  { id: 1, name: '秋葉原（会社）', fare: 580, color: COLORS[0], type: 'office', lat: 35.6986, lng: 139.7716, radius: 500 },
+];
+let rawData = null;
+let expenses = [];
+let currentFilter = 'all';
+let showHolidays = false;
+
+// Period state: 'month' mode or 'range' mode
+let periodMode = 'month';   // 'month' | 'range'
+let periodYear  = new Date().getFullYear();
+let periodMonth = new Date().getMonth() + 1; // 1-12
+let periodFrom  = '';
+let periodTo    = '';
+
+// Japanese public holidays 2024-2025 (sample)
+const HOLIDAYS = new Set([
+  '2024-01-01','2024-01-08','2024-02-11','2024-02-12','2024-02-23',
+  '2024-03-20','2024-04-29','2024-05-03','2024-05-04','2024-05-05','2024-05-06',
+  '2024-07-15','2024-08-11','2024-08-12','2024-09-16','2024-09-22','2024-09-23',
+  '2024-10-14','2024-11-03','2024-11-04','2024-11-23','2024-12-23',
+  '2025-01-01','2025-01-02','2025-01-03','2025-01-13','2025-02-11','2025-02-23','2025-02-24',
+  '2025-03-20','2025-04-29','2025-05-03','2025-05-04','2025-05-05','2025-05-06',
+  '2025-07-21','2025-08-11','2025-09-15','2025-09-21','2025-09-22','2025-09-23',
+  '2025-10-13','2025-11-03','2025-11-23','2025-11-24','2025-12-23',
+  '2026-01-01','2026-01-12','2026-02-11','2026-02-23','2026-03-20',
+]);
+
+const DAY_NAMES = ['日','月','火','水','木','金','土'];
+
+// ─── Destination Management ───────────────────────────────────
+function renderDestList() {
+  const list = document.getElementById('destList');
+  list.innerHTML = '';
+  destinations.forEach((d) => {
+    const item = document.createElement('div');
+    item.className = 'dest-item';
+    item.innerHTML = `
+      <div class="dest-dot" style="background:${d.color};width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px;"></div>
+      <div class="dest-info">
+        <div class="dest-name">${d.name} <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);">¥${d.fare.toLocaleString()}</span></div>
+        <div class="dest-coords">📍 ${d.lat.toFixed(4)}, ${d.lng.toFixed(4)} &nbsp;±${d.radius}m</div>
+      </div>
+      <button class="dest-remove" onclick="removeDestination(${d.id})">×</button>
+    `;
+    list.appendChild(item);
+  });
+}
+
+function addDestination() {
+  const name = document.getElementById('newDestName').value.trim();
+  const fare = parseInt(document.getElementById('newDestFare').value);
+  const lat  = parseFloat(document.getElementById('newDestLat').value);
+  const lng  = parseFloat(document.getElementById('newDestLng').value);
+  const radius = parseInt(document.getElementById('newDestRadius').value) || 300;
+  if (!name || isNaN(fare) || isNaN(lat) || isNaN(lng)) {
+    showToast('名前・運賃・緯度・経度をすべて入力してください', 'warn'); return;
+  }
+  const id = Date.now();
+  destinations.push({ id, name, fare, lat, lng, radius, color: COLORS[destinations.length % COLORS.length], type: 'client' });
+  ['newDestName','newDestFare','newDestLat','newDestLng'].forEach(id => document.getElementById(id).value = '');
+  renderDestList();
+}
+
+function removeDestination(id) {
+  destinations = destinations.filter(d => d.id !== id);
+  renderDestList();
+}
+
+// ─── Progress UI helpers ──────────────────────────────────────
+function setStep(n, state, detail) {
+  // state: 'active' | 'done' | 'error' | 'wait'
+  const el = document.getElementById('step' + n);
+  const icons = { active: ['📂','🔍','✅'], done: ['📂','🔍','✅'], error: ['📂','🔍','✅'], wait: ['📂','🔍','✅'] };
+  const doneIcons = ['✅','✅','✅'];
+  const errorIcons = ['❌','❌','❌'];
+  const activeIcons = ['📂','🔄','⏳'];
+  el.className = 'progress-step ' + (state === 'wait' ? '' : state);
+  const iconEl = el.querySelector('.step-icon');
+  if (state === 'done')  iconEl.textContent = '✅';
+  else if (state === 'error') iconEl.textContent = '❌';
+  else if (state === 'active') { iconEl.textContent = ['📂','🔄','⏳'][n-1]; iconEl.classList.add('pulsing'); }
+  else { iconEl.textContent = ['📂','🔍','✅'][n-1]; iconEl.classList.remove('pulsing'); }
+  if (state !== 'active') iconEl.classList.remove('pulsing');
+  if (detail) document.getElementById('step' + n + 'text').textContent = detail;
+}
+function setProgress(pct, detail) {
+  document.getElementById('progressFill').style.width = pct + '%';
+  if (detail !== undefined) document.getElementById('progressDetail').textContent = detail;
+}
+function showProgress() {
+  document.getElementById('progressBox').classList.add('visible');
+}
+function resetProgress() {
+  setStep(1, 'wait'); setStep(2, 'wait'); setStep(3, 'wait');
+  setProgress(0, '　');
+  document.getElementById('step1text').textContent = 'ファイルを読み込み中...';
+  document.getElementById('step2text').textContent = 'JSONを解析中...';
+  document.getElementById('step3text').textContent = '完了';
+  showProgress();
+}
+
+// ─── File Load (shared logic) ─────────────────────────────────
+function loadFile(file) {
+  if (!file) return;
+  const mb = (file.size / 1024 / 1024).toFixed(1);
+  resetProgress();
+
+  // Step 1: reading
+  setStep(1, 'active', `読み込み中... (${mb} MB)`);
+  setProgress(5, `${file.name}  /  ${mb} MB`);
+
+  const reader = new FileReader();
+
+  reader.onprogress = ev => {
+    if (ev.lengthComputable) {
+      const pct = Math.round((ev.loaded / ev.total) * 50); // 0→50%
+      setProgress(pct, `読み込み中... ${(ev.loaded/1024/1024).toFixed(1)} / ${mb} MB`);
+    }
+  };
+
+  reader.onload = ev => {
+    setStep(1, 'done', `読み込み完了 (${mb} MB)`);
+    setProgress(55, 'JSONを解析中...');
+    setStep(2, 'active', 'JSONを解析中...');
+
+    // Yield to browser to repaint, then parse
+    setTimeout(() => {
+      try {
+        const text = ev.target.result;
+        setProgress(65, `テキスト長: ${(text.length/1000).toFixed(0)}K 文字`);
+
+        setTimeout(() => {
+          try {
+            rawData = JSON.parse(text);
+            setProgress(90, 'データ構造を確認中...');
+
+            // Detect format
+            let fmt = '不明';
+            if (rawData.semanticSegments) fmt = `新形式 (semanticSegments: ${rawData.semanticSegments.length}件)`;
+            else if (rawData.timelineObjects) fmt = `旧形式 (timelineObjects: ${rawData.timelineObjects.length}件)`;
+            else if (Array.isArray(rawData)) fmt = `配列形式 (${rawData.length}件)`;
+
+            setStep(2, 'done', `解析完了 — ${fmt}`);
+            setStep(3, 'done', '✓ 準備完了！「精算データを生成」を押してください');
+            setProgress(100, fmt);
+            document.getElementById('processBtn').disabled = false;
+            document.getElementById('debugBtn').disabled = false;
+            showToast(`✓ ${file.name} を読み込みました`);
+          } catch(err) {
+            setStep(2, 'error', `解析エラー: ${err.message}`);
+            setProgress(65, 'JSONの形式が正しくない可能性があります');
+            showToast('JSONの解析に失敗しました', 'error');
+          }
+        }, 30);
+
+      } catch(err) {
+        setStep(1, 'error', `読み込みエラー: ${err.message}`);
+        showToast('ファイルの読み込みに失敗しました', 'error');
+      }
+    }, 30);
+  };
+
+  reader.onerror = () => {
+    setStep(1, 'error', 'ファイルの読み込みに失敗しました');
+    setProgress(0, 'エラーが発生しました');
+    showToast('ファイルの読み込みに失敗しました', 'error');
+  };
+
+  reader.readAsText(file);
+}
+
+// ─── File Input ───────────────────────────────────────────────
+document.getElementById('fileInput').addEventListener('change', e => {
+  loadFile(e.target.files[0]);
+});
+
+// Drag & drop
+const zone = document.getElementById('uploadZone');
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+zone.addEventListener('drop', e => {
+  e.preventDefault();
+  zone.classList.remove('drag-over');
+  loadFile(e.dataTransfer.files[0]);
+});
+
+// ─── Parse Google Timeline JSON ───────────────────────────────
+function parseTimeline(data) {
+  const visits = []; // { date, placeName, lat, lng, start, end }
+
+  // New on-device format (semanticSegments)
+  if (data.semanticSegments) {
+    for (const seg of data.semanticSegments) {
+      if (seg.visit) {
+        const ts = seg.startTime || seg.visit.hierarchyLevel;
+        const date = (seg.startTime || '').substring(0, 10);
+        const place = seg.visit.topCandidate?.placeLocation?.address ||
+                      seg.visit.topCandidate?.semanticType ||
+                      seg.visit.topCandidate?.placeId || '不明';
+        const lat = seg.visit.topCandidate?.placeLocation?.latLng?.split(',')[0]?.replace('°','') || 0;
+        const lng = seg.visit.topCandidate?.placeLocation?.latLng?.split(',')[1]?.replace('°','') || 0;
+        if (date) visits.push({ date, placeName: place, lat: parseFloat(lat), lng: parseFloat(lng) });
+      }
+    }
+  }
+  // Old format (timelineObjects)
+  else if (data.timelineObjects) {
+    for (const obj of data.timelineObjects) {
+      if (obj.placeVisit) {
+        const pv = obj.placeVisit;
+        const date = (pv.duration?.startTimestamp || '').substring(0, 10);
+        const place = pv.location?.name || pv.location?.address || '不明';
+        const lat = (pv.location?.latitudeE7 || 0) / 1e7;
+        const lng = (pv.location?.longitudeE7 || 0) / 1e7;
+        if (date) visits.push({ date, placeName: place, lat, lng });
+      }
+    }
+  }
+  // Takeout Records.json format
+  else if (Array.isArray(data)) {
+    // minimal support
+    for (const r of data.slice(0, 500)) {
+      const date = (r.timestamp || '').substring(0, 10);
+      if (date) visits.push({ date, placeName: r.address || '不明', lat: r.latitudeE7/1e7||0, lng: r.longitudeE7/1e7||0 });
+    }
+  }
+
+  return visits;
+}
+
+// ─── Haversine distance (meters) ──────────────────────────────
+function haversine(lat1, lng1, lat2, lng2) {
+  const R = 6371000;
+  const toRad = x => x * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+// ─── Match visits to destinations by coordinates ───────────────
+function matchDestination(visit) {
+  if (!visit.lat || !visit.lng) return null;
+  let best = null, bestDist = Infinity;
+  for (const dest of destinations) {
+    const dist = haversine(visit.lat, visit.lng, dest.lat, dest.lng);
+    if (dist <= dest.radius && dist < bestDist) {
+      best = dest; bestDist = dist;
+    }
+  }
+  return best;
+}
+
+// ─── Process ──────────────────────────────────────────────────
+function processData() {
+  if (!rawData) return;
+
+  const mode = document.getElementById('tripMode').value;
+  const holidayMode = document.getElementById('holidayMode').value;
+  const visits = parseTimeline(rawData);
+
+  // Group by date
+  const byDate = {};
+  for (const v of visits) {
+    if (!byDate[v.date]) byDate[v.date] = [];
+    byDate[v.date].push(v);
+  }
+
+  expenses = [];
+  for (const [date, dayVisits] of Object.entries(byDate).sort()) {
+    const d = new Date(date + 'T12:00:00');
+    const dow = d.getDay(); // 0=Sun,6=Sat
+    const isWeekend = dow === 0 || dow === 6;
+    const isHoliday = HOLIDAYS.has(date);
+    const isNonWorkday = isWeekend || isHoliday;
+
+    for (const v of dayVisits) {
+      const dest = matchDestination(v);
+      if (!dest) continue;
+      const fare = mode === 'round' ? dest.fare * 2 : dest.fare;
+      expenses.push({
+        date,
+        dow: DAY_NAMES[dow],
+        placeName: v.placeName,
+        dest,
+        fare,
+        isNonWorkday,
+        included: !isNonWorkday,
+      });
+    }
+  }
+
+  // Deduplicate: same date + same destination → keep one
+  const seen = new Set();
+  expenses = expenses.filter(e => {
+    const key = `${e.date}__${e.dest.id}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  renderTable();
+  updateStats();
+  document.getElementById('exportBtn').disabled = false;
+}
+
+// ─── Period helpers ───────────────────────────────────────────
+function pad2(n) { return String(n).padStart(2,'0'); }
+
+function periodDateRange() {
+  if (periodMode === 'range' && periodFrom && periodTo) {
+    return { from: periodFrom, to: periodTo };
+  }
+  const from = `${periodYear}-${pad2(periodMonth)}-01`;
+  const lastDay = new Date(periodYear, periodMonth, 0).getDate();
+  const to   = `${periodYear}-${pad2(periodMonth)}-${pad2(lastDay)}`;
+  return { from, to };
+}
+
+function updatePeriodDisplay() {
+  const { from, to } = periodDateRange();
+  if (periodMode === 'month') {
+    document.getElementById('periodDisplay').textContent = `${periodYear}年${periodMonth}月`;
+  } else {
+    document.getElementById('periodDisplay').textContent = `${from} 〜 ${to}`;
+  }
+  // Sync date inputs
+  document.getElementById('rangeFrom').value = from;
+  document.getElementById('rangeTo').value   = to;
+  // Button highlights
+  const now = new Date();
+  document.getElementById('btnThisMonth').classList.toggle('active',
+    periodMode === 'month' && periodYear === now.getFullYear() && periodMonth === now.getMonth()+1);
+  const prev = new Date(now.getFullYear(), now.getMonth()-1, 1);
+  document.getElementById('btnPrevMonth').classList.toggle('active',
+    periodMode === 'month' && periodYear === prev.getFullYear() && periodMonth === prev.getMonth()+1);
+}
+
+function shiftMonth(delta) {
+  periodMode = 'month';
+  periodMonth += delta;
+  if (periodMonth > 12) { periodMonth = 1;  periodYear++; }
+  if (periodMonth < 1)  { periodMonth = 12; periodYear--; }
+  updatePeriodDisplay();
+  renderTable();
+  updateStats();
+}
+
+function setThisMonth() {
+  periodMode = 'month';
+  const now = new Date();
+  periodYear = now.getFullYear(); periodMonth = now.getMonth()+1;
+  updatePeriodDisplay(); renderTable(); updateStats();
+}
+
+function setPrevMonth() {
+  periodMode = 'month';
+  const now = new Date();
+  const prev = new Date(now.getFullYear(), now.getMonth()-1, 1);
+  periodYear = prev.getFullYear(); periodMonth = prev.getMonth()+1;
+  updatePeriodDisplay(); renderTable(); updateStats();
+}
+
+function onRangeChange() {
+  const f = document.getElementById('rangeFrom').value;
+  const t = document.getElementById('rangeTo').value;
+  if (!f || !t) return;
+  periodMode = 'range';
+  periodFrom = f; periodTo = t;
+  updatePeriodDisplay(); renderTable(); updateStats();
+}
+
+
+function renderTable() {
+  const mode = document.getElementById('tripMode').value;
+  const home = document.getElementById('homeStation').value || '自宅';
+  const wrap = document.getElementById('tableWrap');
+  const { from, to } = periodDateRange();
+
+  let filtered = expenses.filter(e => e.date >= from && e.date <= to);
+  if (currentFilter === 'office') filtered = filtered.filter(e => e.dest.type === 'office');
+  if (currentFilter === 'client') filtered = filtered.filter(e => e.dest.type === 'client');
+  if (!showHolidays) filtered = filtered.filter(e => !e.isNonWorkday);
+
+  if (filtered.length === 0) {
+    wrap.innerHTML = '<div class="empty"><div class="empty-icon">🔍</div><div class="empty-title">該当データなし</div><div class="empty-desc">フィルターや訪問先設定を確認してください。</div></div>';
+    return;
+  }
+
+  // Group by month
+  const byMonth = {};
+  for (const e of filtered) {
+    const m = e.date.substring(0, 7);
+    if (!byMonth[m]) byMonth[m] = [];
+    byMonth[m].push(e);
+  }
+
+  let html = `<table><thead><tr>
+    <th></th><th>日付</th><th>曜日</th><th>出発地</th><th></th><th>訪問先</th><th>種別</th><th style="text-align:right">運賃</th>
+  </tr></thead><tbody>`;
+
+  for (const [month, rows] of Object.entries(byMonth).sort()) {
+    const [y, m] = month.split('-');
+    const monthTotal = rows.filter(r => r.included).reduce((s, r) => s + r.fare, 0);
+    html += `<tr class="month-header"><td colspan="8">
+      ${y}年 ${parseInt(m)}月　／　小計: ¥${monthTotal.toLocaleString()}
+    </td></tr>`;
+    for (const e of rows) {
+      const rowClass = e.isNonWorkday ? ' class="excluded"' : '';
+      const tagType = e.dest.type === 'office'
+        ? '<span class="tag tag-office">通勤</span>'
+        : '<span class="tag tag-client">訪問</span>';
+      const tagHoliday = e.isNonWorkday ? ' <span class="tag tag-holiday">休日</span>' : '';
+      const tagMode = mode === 'round' ? '<span class="tag tag-round">往復</span>' : '<span class="tag tag-one">片道</span>';
+      html += `<tr${rowClass}>
+        <td><input type="checkbox" class="row-check" ${e.included?'checked':''} onchange="toggleRow(this, '${e.date}', ${e.dest.id})"></td>
+        <td class="td-date">${e.date}</td>
+        <td class="td-day">${e.dow}${e.isNonWorkday?'🔴':''}</td>
+        <td class="td-from">${home}</td>
+        <td class="td-arrow">→</td>
+        <td class="td-dest"><span style="color:${e.dest.color};margin-right:6px;">●</span>${e.dest.name}</td>
+        <td>${tagType}${tagHoliday} ${tagMode}</td>
+        <td class="td-fare">¥${e.fare.toLocaleString()}</td>
+      </tr>`;
+    }
+  }
+
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+}
+
+function toggleRow(el, date, destId) {
+  const exp = expenses.find(e => e.date === date && e.dest.id === destId);
+  if (exp) exp.included = el.checked;
+  updateStats();
+}
+
+// ─── Stats ────────────────────────────────────────────────────
+function updateStats() {
+  const { from, to } = periodDateRange();
+  const included = expenses.filter(e => e.included && e.date >= from && e.date <= to);
+  const total = included.reduce((s, e) => s + e.fare, 0);
+  const officeCnt = included.filter(e => e.dest.type === 'office').length;
+  const clientCnt = included.filter(e => e.dest.type === 'client').length;
+  document.getElementById('statDays').textContent = included.length + '日';
+  document.getElementById('statTotal').textContent = '¥' + total.toLocaleString();
+  document.getElementById('statOffice').textContent = officeCnt + '日';
+  document.getElementById('statClient').textContent = clientCnt + '日';
+}
+
+// ─── Filters ──────────────────────────────────────────────────
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTable();
+}
+
+function toggleHolidays(btn) {
+  showHolidays = !showHolidays;
+  btn.classList.toggle('active', showHolidays);
+  btn.textContent = showHolidays ? '休日を非表示' : '休日を表示';
+  renderTable();
+}
+
+// ─── Download helper (Claude.ai CSP対応: モーダルでコピー保存) ──
+function downloadDataURI(content, filename, mimeType) {
+  showSaveModal(content, filename);
+}
+
+function showSaveModal(content, filename) {
+  // 既存モーダルを削除
+  const old = document.getElementById('saveModal');
+  if (old) old.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'saveModal';
+  modal.style.cssText = `
+    position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9000;
+    display:flex;align-items:center;justify-content:center;padding:24px;
+  `;
+
+  modal.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;
+                width:100%;max-width:560px;padding:24px;display:flex;flex-direction:column;gap:14px;
+                box-shadow:0 24px 64px rgba(0,0,0,0.6);">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <div style="font-size:14px;font-weight:700;">💾 ファイルを保存</div>
+          <div style="font-size:11px;color:var(--text-dim);margin-top:2px;font-family:'DM Mono',monospace;">${filename}</div>
+        </div>
+        <button onclick="document.getElementById('saveModal').remove()"
+          style="background:none;border:none;color:var(--text-muted);font-size:20px;cursor:pointer;line-height:1;">×</button>
+      </div>
+      <div style="font-size:12px;color:var(--text-dim);background:rgba(79,124,255,0.08);
+                  border:1px solid rgba(79,124,255,0.2);border-radius:8px;padding:10px 12px;line-height:1.6;">
+        ① 「全選択してコピー」ボタンを押す<br>
+        ② テキストエディタ（メモ帳など）に貼り付ける<br>
+        ③ <code style="font-family:'DM Mono',monospace;color:var(--accent);">${filename}</code> という名前で保存する
+      </div>
+      <textarea id="saveModalContent" readonly
+        style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+               padding:10px 12px;color:var(--text-dim);font-family:'DM Mono',monospace;
+               font-size:11px;height:200px;resize:vertical;width:100%;box-sizing:border-box;
+               line-height:1.5;">${content.replace(/</g,'&lt;')}</textarea>
+      <div style="display:flex;gap:8px;">
+        <button onclick="selectAndCopySaveModal()"
+          style="flex:1;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;
+                 border-radius:8px;padding:11px;color:white;font-size:13px;font-weight:700;
+                 font-family:inherit;cursor:pointer;">
+          📋 全選択してコピー
+        </button>
+        <button onclick="document.getElementById('saveModal').remove()"
+          style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+                 padding:11px 18px;color:var(--text-dim);font-size:13px;font-family:inherit;cursor:pointer;">
+          閉じる
+        </button>
+      </div>
+      <div id="saveModalMsg" style="font-size:11px;text-align:center;color:var(--green);min-height:14px;"></div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  // モーダル外クリックで閉じる
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+}
+
+function selectAndCopySaveModal() {
+  const ta = document.getElementById('saveModalContent');
+  ta.select();
+  try {
+    navigator.clipboard.writeText(ta.value).then(() => {
+      document.getElementById('saveModalMsg').textContent = '✓ クリップボードにコピーしました！テキストエディタに貼り付けて保存してください。';
+    });
+  } catch {
+    document.execCommand('copy');
+    document.getElementById('saveModalMsg').textContent = '✓ コピーしました！テキストエディタに貼り付けて保存してください。';
+  }
+}
+
+// ─── Export CSV ───────────────────────────────────────────────
+function exportCSV() {
+  const home = document.getElementById('homeStation').value || '自宅';
+  const mode = document.getElementById('tripMode').value;
+  const rows = expenses.filter(e => e.included);
+  const lines = [['日付','曜日','出発地','訪問先','種別','往復/片道','運賃(円)']];
+  for (const e of rows) {
+    lines.push([e.date, e.dow, home, e.dest.name, e.dest.type === 'office' ? '通勤' : '訪問', mode === 'round' ? '往復' : '片道', e.fare]);
+  }
+  const csv = '\uFEFF' + lines.map(r => r.join(',')).join('\n');
+  downloadDataURI(csv, `交通費精算_${new Date().toISOString().slice(0,10)}.csv`);
+  showToast('✓ CSVをエクスポートしました');
+}
+
+// ─── TeamSpirit Copy ──────────────────────────────────────────
+function copyForTeamSpirit() {
+  const home = document.getElementById('homeStation').value || '自宅';
+  const mode = document.getElementById('tripMode').value;
+  const rows = expenses.filter(e => e.included);
+  if (rows.length === 0) { showToast('精算データがありません', 'warn'); return; }
+
+  let text = '【TeamSpirit 交通費精算データ】\n';
+  text += `出力日時: ${new Date().toLocaleString('ja-JP')}\n\n`;
+
+  let curMonth = '';
+  for (const e of rows) {
+    const m = e.date.substring(0, 7);
+    if (m !== curMonth) {
+      curMonth = m;
+      const monthTotal = rows.filter(r => r.date.startsWith(m)).reduce((s, r) => s + r.fare, 0);
+      text += `\n■ ${m.replace('-', '年')}月 (小計: ¥${monthTotal.toLocaleString()})\n`;
+    }
+    text += `${e.date}（${e.dow}）　${home} → ${e.dest.name}　${mode === 'round' ? '往復' : '片道'}　¥${e.fare.toLocaleString()}\n`;
+  }
+
+  const total = rows.reduce((s, e) => s + e.fare, 0);
+  text += `\n─────────────────\n合計: ¥${total.toLocaleString()}`;
+
+  navigator.clipboard.writeText(text).then(() => showToast('✓ クリップボードにコピーしました'));
+}
+
+// ─── Demo Data ────────────────────────────────────────────────
+function loadDemo() {
+  // Generate realistic demo data for 3 months
+  const demoVisits = [];
+  const today = new Date('2026-03-04');
+
+  const demoPlaces = [
+    { name: '秋葉原 UDX', lat: 35.6986, lng: 139.7716 },
+    { name: '新宿パートナーオフィス', lat: 35.6896, lng: 139.7006 },
+    { name: '渋谷クライアント', lat: 35.6580, lng: 139.7016 },
+    { name: '池袋ビル', lat: 35.7295, lng: 139.7109 },
+    { name: '秋葉原 本社', lat: 35.6987, lng: 139.7721 },
+  ];
+
+  const base = new Date('2025-12-01');
+  for (let i = 0; i < 90; i++) {
+    const d = new Date(base);
+    d.setDate(d.getDate() + i);
+    if (d > today) break;
+    const dow = d.getDay();
+    if (dow === 0 || dow === 6) continue; // skip weekends for most
+    const dateStr = d.toISOString().substring(0, 10);
+    // ~80% chance of going somewhere
+    if (Math.random() < 0.8) {
+      const place = demoPlaces[Math.floor(Math.random() * demoPlaces.length)];
+      demoVisits.push({ date: dateStr, placeName: place.name, lat: place.lat, lng: place.lng });
+    }
+  }
+
+  rawData = { semanticSegments: demoVisits.map(v => ({
+    startTime: v.date + 'T09:00:00Z',
+    visit: { topCandidate: { placeLocation: { address: v.placeName, latLng: `${v.lat}°, ${v.lng}°` } } }
+  })) };
+
+  // Add demo destinations
+  destinations = [
+    { id: 1, name: '秋葉原', fare: 580, color: COLORS[0], type: 'office' },
+    { id: 2, name: '新宿', fare: 200, color: COLORS[1], type: 'client' },
+    { id: 3, name: '渋谷', fare: 220, color: COLORS[2], type: 'client' },
+    { id: 4, name: '池袋', fare: 240, color: COLORS[3], type: 'client' },
+  ];
+  renderDestList();
+  document.getElementById('processBtn').disabled = false;
+  showToast('✓ サンプルデータを読み込みました。「精算データを生成」を押してください');
+}
+
+// ─── Toast ────────────────────────────────────────────────────
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.borderLeftColor = type === 'error' ? 'var(--red)' : type === 'warn' ? 'var(--yellow)' : 'var(--green)';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ─── Debug: show actual place coords from data ────────────────
+function showDebug() {
+  if (!rawData) return;
+  const panel = document.getElementById('debugPanel');
+  panel.style.display = 'block';
+
+  const samples = [];
+  let totalVisits = 0, noCoordCount = 0;
+
+  for (const seg of (rawData.semanticSegments || [])) {
+    if (!seg.visit) continue;
+    totalVisits++;
+    const tc = seg.visit.topCandidate;
+    const latLngStr = tc?.placeLocation?.latLng || '';
+    const parts = latLngStr.split(',');
+    const lat = parseFloat(parts[0]?.replace('°','').trim());
+    const lng = parseFloat(parts[1]?.replace('°','').trim());
+    const name = tc?.placeLocation?.address || tc?.semanticType || '名称なし';
+    const date = (seg.startTime || '').substring(0, 10);
+    if (!isNaN(lat) && !isNaN(lng)) {
+      samples.push({ name, lat, lng, date });
+    } else {
+      noCoordCount++;
+    }
+  }
+
+  // Deduplicate by rounded coords
+  const seen = new Set();
+  const unique = samples.filter(s => {
+    const key = `${s.lat.toFixed(3)},${s.lng.toFixed(3)}`;
+    if (seen.has(key)) return false;
+    seen.add(key); return true;
+  });
+
+  const list = document.getElementById('debugList');
+  list.innerHTML = '';
+  unique.slice(0, 80).forEach(s => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;cursor:pointer;';
+    row.title = '클릭で緯度・経度をコピー';
+    row.innerHTML = `
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:11px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${s.name}</div>
+        <div style="font-size:10px;font-family:'DM Mono',monospace;color:var(--text-dim);">${s.lat.toFixed(5)}, ${s.lng.toFixed(5)}</div>
+      </div>
+      <div style="font-size:10px;color:var(--text-muted);flex-shrink:0;">${s.date}</div>
+    `;
+    row.onclick = () => {
+      navigator.clipboard.writeText(`${s.lat.toFixed(6)}, ${s.lng.toFixed(6)}`);
+      showToast(`📋 ${s.lat.toFixed(5)}, ${s.lng.toFixed(5)} をコピーしました`);
+    };
+    list.appendChild(row);
+  });
+
+  if (unique.length === 0) {
+    list.innerHTML = '<div style="font-size:12px;color:var(--red);padding:8px;">座標が取得できませんでした。</div>';
+  }
+
+  const firstVisit = (rawData.semanticSegments || []).find(s => s.visit);
+  const rawSample = firstVisit ? JSON.stringify(firstVisit.visit, null, 2).substring(0, 600) : 'なし';
+
+  document.getElementById('debugStats').innerHTML =
+    `visitセグメント総数: ${totalVisits}<br>` +
+    `座標あり: ${samples.length} 件 / ユニーク地点: ${unique.length} 件<br>` +
+    `座標なし: ${noCoordCount} 件<br><br>` +
+    `<details style="cursor:pointer;"><summary style="color:var(--accent);">最初のvisitデータ（raw）</summary>` +
+    `<pre style="font-size:10px;margin-top:6px;white-space:pre-wrap;color:var(--text-dim);">${rawSample}</pre></details>`;
+}
+
+// ─── Config Schema & Helpers ──────────────────────────────────
+/*
+  設定ファイル仕様 (transport-expense-config.json)
+  {
+    "version": "1.0",
+    "meta": {
+      "name": "設定名（任意）",
+      "updatedAt": "ISO8601"
+    },
+    "settings": {
+      "homeStation": "新宿",
+      "tripMode": "round",        // "round" | "one"
+      "holidayMode": "exclude"    // "exclude" | "include"
+    },
+    "destinations": [
+      {
+        "id": 1,
+        "name": "秋葉原（会社）",
+        "type": "office",         // "office" | "client"
+        "fare": 580,
+        "lat": 35.6986,
+        "lng": 139.7716,
+        "radius": 500,
+        "color": "#4f7cff"
+      }
+    ]
+  }
+*/
+
+function buildConfig() {
+  return {
+    version: '1.0',
+    meta: {
+      name: '交通費精算ツール設定',
+      updatedAt: new Date().toISOString()
+    },
+    settings: {
+      homeStation: document.getElementById('homeStation').value || '',
+      tripMode:    document.getElementById('tripMode').value,
+      holidayMode: document.getElementById('holidayMode').value
+    },
+    destinations: destinations.map(d => ({
+      id:      d.id,
+      name:    d.name,
+      type:    d.type,
+      fare:    d.fare,
+      lat:     d.lat,
+      lng:     d.lng,
+      radius:  d.radius,
+      color:   d.color
+    }))
+  };
+}
+
+function applyConfig(cfg) {
+  // バージョンチェック
+  if (!cfg.version || !cfg.settings || !Array.isArray(cfg.destinations)) {
+    throw new Error('設定ファイルの形式が正しくありません');
+  }
+
+  // settings 反映
+  const s = cfg.settings;
+  document.getElementById('homeStation').value = s.homeStation || '';
+  const tripSel = document.getElementById('tripMode');
+  if (s.tripMode) tripSel.value = s.tripMode;
+  const holSel = document.getElementById('holidayMode');
+  if (s.holidayMode) holSel.value = s.holidayMode;
+
+  // destinations 反映
+  destinations = cfg.destinations.map(d => ({
+    id:     d.id     ?? Date.now() + Math.random(),
+    name:   d.name   ?? '不明',
+    type:   d.type   ?? 'client',
+    fare:   d.fare   ?? 0,
+    lat:    d.lat    ?? 0,
+    lng:    d.lng    ?? 0,
+    radius: d.radius ?? 300,
+    color:  d.color  ?? COLORS[0]
+  }));
+  renderDestList();
+}
+
+// ─── Export config ────────────────────────────────────────────
+function exportConfig() {
+  const cfg = buildConfig();
+  const json = JSON.stringify(cfg, null, 2);
+  downloadDataURI(json, `transport-expense-config_${new Date().toISOString().slice(0,10)}.json`);
+  showConfigStatus('✓ 設定ファイルをエクスポートしました', 'ok');
+  showToast('✓ 設定ファイルをエクスポートしました');
+}
+
+// ─── Import config ────────────────────────────────────────────
+document.getElementById('configFileInput').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const cfg = JSON.parse(ev.target.result);
+      applyConfig(cfg);
+      const updatedAt = cfg.meta?.updatedAt
+        ? new Date(cfg.meta.updatedAt).toLocaleString('ja-JP')
+        : '不明';
+      showConfigStatus(`✓ 設定を読み込みました（更新日時: ${updatedAt} / 訪問先: ${destinations.length}件）`, 'ok');
+      showToast('✓ 設定ファイルを読み込みました');
+      // データ生成済みなら再レンダー
+      if (expenses.length > 0) { renderTable(); updateStats(); }
+    } catch(err) {
+      showConfigStatus(`エラー: ${err.message}`, 'error');
+      showToast('設定ファイルの読み込みに失敗しました', 'error');
+    }
+    e.target.value = ''; // reset so same file can be reloaded
+  };
+  reader.readAsText(file);
+});
+
+function showConfigStatus(msg, type) {
+  const el = document.getElementById('configStatus');
+  el.style.display = 'block';
+  el.textContent = msg;
+  el.style.background = type === 'ok'
+    ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)';
+  el.style.color = type === 'ok' ? 'var(--green)' : 'var(--red)';
+  el.style.border = type === 'ok'
+    ? '1px solid rgba(16,185,129,0.3)' : '1px solid rgba(239,68,68,0.3)';
+}
+
+// ─── Spec viewer ──────────────────────────────────────────────
+function showSpec() {
+  const spec = `# 交通費精算ツール 仕様書
+バージョン: 1.0
+作成日: ${new Date().toLocaleDateString('ja-JP')}
+
+---
+
+## 概要
+
+Google Maps タイムラインのエクスポートデータ（JSON）を読み込み、
+会社・クライアント先への交通費を自動集計するブラウザ上で動作するツール。
+集計結果は TeamSpirit への手入力補助データとして出力する。
+
+---
+
+## 動作環境
+
+- 実行形式: シングルHTML（サーバー不要、ブラウザで直接開く）
+- 対応ブラウザ: Chrome / Edge / Safari / Firefox（最新版）
+- 外部依存: Google Fonts（Noto Sans JP, DM Mono）のみ
+
+---
+
+## 画面構成
+
+### 左ペイン（サイドバー）
+設定・データ読み込み操作エリア。以下のセクションで構成される。
+
+1. データ読み込み
+2. 設定（⚙️）
+3. 訪問先リスト（🏢）
+4. 操作ボタン
+5. デバッグパネル（展開式）
+
+### 右エリア（コンテンツ）
+集計結果の表示エリア。以下で構成される。
+
+1. 統計バー（上部）
+2. 期間ナビゲーター
+3. フィルターツールバー
+4. 精算一覧テーブル
+
+---
+
+## 機能仕様
+
+### 1. タイムラインデータ読み込み
+
+#### 入力
+- ファイル形式: JSON（Google Maps タイムライン エクスポート）
+- 取得方法: Android 設定 → 位置情報 → タイムライン → エクスポート
+  または Google Maps アプリ → タイムライン → ⋯ → 位置情報とプライバシー設定 → 匯出時間軸資料
+
+#### 対応フォーマット
+- 新形式（端末保存形式）: semanticSegments キーを持つJSON
+- 旧形式（クラウド形式）: timelineObjects キーを持つJSON
+- 配列形式: レコードの配列
+
+#### 読み込み進捗表示
+ファイル選択後、以下の3ステップをリアルタイム表示する。
+  ステップ1: ファイル読み込み中（MBサイズ・進捗%を表示）
+  ステップ2: JSON解析中
+  ステップ3: 完了（フォーマット種別・件数を表示）
+
+#### 操作方法
+- クリックしてファイル選択
+- ドラッグ＆ドロップ
+- 再アップロード時は自動的に前回データをリセット
+
+
+### 2. 設定
+
+#### 基本設定項目
+| 項目 | 説明 | デフォルト値 |
+|------|------|-------------|
+| 自宅の最寄り駅（出発地） | 精算明細の出発地として表示する文字列 | 新宿 |
+| 往復／片道 | 運賃の計算方式。往復の場合は登録運賃×2 | 往復 |
+| 休日の扱い | 除外（表示しない）または含める（グレーアウト表示） | 除外する |
+
+#### 設定ファイル（外部JSON）
+設定の保存・再利用のために JSON ファイルとして入出力できる。
+
+ファイル名形式: transport-expense-config_YYYY-MM-DD.json
+
+スキーマ:
+\`\`\`json
+{
+  "version": "1.0",
+  "meta": {
+    "name": "設定名（任意）",
+    "updatedAt": "ISO8601形式の日時"
+  },
+  "settings": {
+    "homeStation": "出発地駅名",
+    "tripMode": "round | one",
+    "holidayMode": "exclude | include"
+  },
+  "destinations": [
+    {
+      "id": 数値,
+      "name": "訪問先名",
+      "type": "office | client",
+      "fare": 片道運賃（整数・円）,
+      "lat": 緯度（小数）,
+      "lng": 経度（小数）,
+      "radius": 判定半径（整数・メートル）,
+      "color": "#HEX カラーコード"
+    }
+  ]
+}
+\`\`\`
+
+インポート: 設定セクションの「📥 インポート」ボタンからJSONファイルを選択
+エクスポート: 「📤 エクスポート」ボタンで現在の設定をモーダルに出力しコピー保存
+
+注意: Claude.ai 埋め込み環境の CSP 制限により、
+      ファイルの直接ダウンロードは不可。モーダル経由のコピー＆ペースト保存を使用する。
+
+
+### 3. 訪問先リスト
+
+各訪問先は以下の属性を持つ。
+
+| 属性 | 説明 |
+|------|------|
+| 名前 | 訪問先の表示名 |
+| 種別 | office（通勤）または client（訪問） |
+| 片道運賃 | 円単位の整数 |
+| 緯度・経度 | Google Maps で右クリック→座標コピーで取得 |
+| 判定半径 | タイムラインの座標がこの半径内に入れば「訪問あり」と判定（メートル） |
+| カラー | 一覧表示時の識別色（自動割り当て） |
+
+#### マッチングアルゴリズム
+ハーバーサイン公式（Haversine formula）を使用して2点間の距離（メートル）を計算し、
+登録された全訪問先との距離を比較。判定半径内に入る最も近い訪問先にマッチさせる。
+複数の訪問先が半径内に入る場合は最も近い1件を採用する。
+
+#### デフォルト設定
+初期状態では「秋葉原（会社）」が1件登録されている（仮の座標・運賃）。
+実際の場所に合わせて設定ファイルで上書きすること。
+
+#### 重複除去
+同じ日付・同じ訪問先の組み合わせは1件に集約する。
+
+
+### 4. 期間指定
+
+| 操作 | 説明 |
+|------|------|
+| ◀ 前月 / 次月 ▶ | 月単位で前後に移動 |
+| 今月 | 現在の年月を選択（起動時のデフォルト） |
+| 先月 | 前月を選択（通常の精算対象月） |
+| 日付入力欄（〜） | 任意の開始日・終了日を直接指定（範囲モード） |
+
+月モードと範囲モードは自動的に切り替わる。
+統計バーの集計値も選択中の期間に連動する。
+
+
+### 5. 休日判定
+
+#### 非営業日の定義
+- 土曜日（曜日番号: 6）
+- 日曜日（曜日番号: 0）
+- 日本の祝日（ハードコードされたリスト）
+
+#### 組み込み祝日データの範囲
+2024年〜2026年3月までの日本の祝日を内包。
+振替休日も含む。
+
+#### 休日の扱い設定による挙動
+- 除外: 休日の精算データは一覧に表示されず、集計にも含まれない
+- 含める: 休日データはグレーアウト表示され、チェックボックスで個別に精算対象から外せる
+
+
+### 6. 精算一覧テーブル
+
+#### 表示項目
+チェック / 日付 / 曜日 / 出発地 / → / 訪問先 / 種別タグ / 運賃
+
+#### 種別タグ
+- 通勤（青）: office 種別の訪問先
+- 訪問（紫）: client 種別の訪問先
+- 休日（赤）: 土日祝日
+- 往復（緑）: 往復設定時
+- 片道（黄）: 片道設定時
+
+#### チェックボックス
+各行のチェックボックスで精算対象を個別に除外できる。
+統計バーの合計金額に即座に反映される。
+
+#### 月グループヘッダー
+範囲モード使用時など複数月にまたがる場合、月ごとにグループヘッダーと月別小計を表示する。
+
+#### フィルター
+- すべて: 全訪問先を表示
+- 通勤: office 種別のみ表示
+- 訪問: client 種別のみ表示
+- 休日を表示/非表示: 休日データの表示切り替え
+
+
+### 7. 統計バー
+
+選択中の期間・チェック状態に基づいてリアルタイム集計。
+
+| 項目 | 説明 |
+|------|------|
+| 精算対象日数 | チェック済みの件数 |
+| 合計交通費 | チェック済みの運賃合計（円） |
+| 会社への通勤 | office 種別のチェック済み件数 |
+| クライアント訪問 | client 種別のチェック済み件数 |
+
+
+### 8. 出力機能
+
+#### TeamSpirit用コピー（📋）
+チェック済みの精算データを月別テキスト形式でクリップボードにコピーする。
+TeamSpirit への手入力時の参照データとして使用する。
+
+出力形式:
+  【TeamSpirit 交通費精算データ】
+  出力日時: YYYY/MM/DD HH:MM:SS
+  ■ YYYY年M月 (小計: ¥X,XXX)
+  YYYY-MM-DD（曜）　出発地 → 訪問先　往復/片道　¥XXX
+  ─────────────────
+  合計: ¥X,XXX
+
+#### CSV出力（⬇）
+チェック済みの精算データをCSV形式でモーダルに出力しコピー保存する。
+BOM付きUTF-8。Excelでの文字化け防止済み。
+
+出力列: 日付 / 曜日 / 出発地 / 訪問先 / 種別 / 往復片道 / 運賃(円)
+
+
+### 9. デバッグ機能（🔎 データ内の場所名を確認する）
+
+タイムラインJSONから抽出した訪問地点の座標一覧を表示する。
+各行をクリックすると緯度・経度をクリップボードにコピーできる。
+訪問先登録時の座標取得に活用する。
+
+表示情報:
+- 場所名（Google Maps が自動付与）
+- 緯度・経度（小数5桁）
+- 初回訪問日
+- 統計（visit総数 / 座標あり件数 / ユニーク地点数）
+- 最初のvisitデータのRAW JSON（展開式）
+
+---
+
+## データフロー
+
+1. タイムラインJSON読み込み → semanticSegments を解析
+2. 各visitセグメントから日付・緯度経度を抽出
+3. ハーバーサイン距離計算で訪問先とマッチング
+4. 同日・同訪問先の重複を除去
+5. 土日祝判定を付与
+6. 期間フィルター・種別フィルターで絞り込み
+7. テーブル表示 / 統計集計
+
+---
+
+## 既知の制約
+
+- Claude.ai 埋め込み環境では blob: URL / data: URI によるファイルダウンロードが
+  CSP（Content Security Policy）でブロックされるため、
+  エクスポートはモーダル経由のコピー＆ペースト保存となる。
+- 祝日データは 2024〜2026年3月分をハードコード。それ以降の祝日は手動対応が必要。
+- TeamSpirit への自動入力APIは未対応（手入力補助ツールとして運用）。
+- タイムラインの座標精度は Google Maps の記録精度に依存する。
+  精度が低い場合は判定半径（radius）を広げて対応する。
+`;
+
+  const old = document.getElementById('specModal');
+  if (old) old.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'specModal';
+  modal.style.cssText = `
+    position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9000;
+    display:flex;align-items:center;justify-content:center;padding:24px;
+  `;
+  modal.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;
+                width:100%;max-width:680px;max-height:90vh;padding:24px;
+                display:flex;flex-direction:column;gap:14px;
+                box-shadow:0 24px 64px rgba(0,0,0,0.6);">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+        <div>
+          <div style="font-size:14px;font-weight:700;">📄 仕様書</div>
+          <div style="font-size:11px;color:var(--text-dim);margin-top:2px;font-family:'DM Mono',monospace;">transport-expense-tool-spec.md</div>
+        </div>
+        <button onclick="document.getElementById('specModal').remove()"
+          style="background:none;border:none;color:var(--text-muted);font-size:22px;cursor:pointer;line-height:1;">×</button>
+      </div>
+      <div style="font-size:11px;color:var(--text-dim);background:rgba(79,124,255,0.08);
+                  border:1px solid rgba(79,124,255,0.2);border-radius:8px;padding:8px 12px;">
+        ① 「全選択してコピー」を押す　② テキストエディタに貼り付ける　③ <code style="color:var(--accent);font-family:'DM Mono',monospace;">spec.md</code> として保存
+      </div>
+      <textarea id="specContent" readonly style="
+        flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+        padding:12px;color:var(--text-dim);font-family:'DM Mono',monospace;font-size:11px;
+        resize:none;line-height:1.6;min-height:0;">${spec.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+      <div style="display:flex;gap:8px;flex-shrink:0;">
+        <button onclick="(()=>{const t=document.getElementById('specContent');t.select();navigator.clipboard.writeText(t.value).then(()=>{document.getElementById('specCopyMsg').textContent='✓ コピーしました！';});})()"
+          style="flex:1;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;
+                 border-radius:8px;padding:11px;color:white;font-size:13px;font-weight:700;
+                 font-family:inherit;cursor:pointer;">
+          📋 全選択してコピー
+        </button>
+        <button onclick="document.getElementById('specModal').remove()"
+          style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+                 padding:11px 18px;color:var(--text-dim);font-size:13px;font-family:inherit;cursor:pointer;">
+          閉じる
+        </button>
+      </div>
+      <div id="specCopyMsg" style="font-size:11px;text-align:center;color:var(--green);min-height:14px;flex-shrink:0;"></div>
+    </div>
+  `;
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
+}
+
+// ─── Init ─────────────────────────────────────────────────────
+renderDestList();
+updatePeriodDisplay();
+</script>
+</body>
+</html>
