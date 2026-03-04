@@ -1,0 +1,24 @@
+{
+  "version": "1.0",
+  "meta": {
+    "name": "交通費精算ツール設定",
+    "updatedAt": "2026-03-04T08:27:40.757Z"
+  },
+  "settings": {
+    "homeStation": "新宿",
+    "tripMode": "round",
+    "holidayMode": "exclude"
+  },
+  "destinations": [
+    {
+      "id": 1,
+      "name": "秋葉原（会社）",
+      "type": "office",
+      "fare": 580,
+      "lat": 35.6986,
+      "lng": 139.7716,
+      "radius": 500,
+      "color": "#4f7cff"
+    }
+  ]
+}
